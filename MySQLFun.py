@@ -23,7 +23,7 @@ def hash256Encode(n:str):
 
 
 
-def insertToTable_AccountPassword(account:str, password:str):
+def insert_to_account_password(account:str, password:str):
     pw = password
     pw = hash256Encode(pw)
     cursor.execute('INSERT INTO `account_password`(account, password) VALUES ("{}", "{}")' .format(account, pw))
@@ -38,6 +38,10 @@ def get_account_password():
     for row in result1:
         password_dict[row[1]] = row[2]
     return password_dict
+
+
+
+
 
 
 
