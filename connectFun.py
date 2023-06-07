@@ -33,25 +33,38 @@ def check_password(connl, addr):
     error_count = 1
     while True:
         user_data = connl.recv(1024).decode("utf-8")
+        print(user_data)
         if user_data == "00000":
             connl.close()
             print("{} is disconnect" .format(addr))
             break
         else:
             account_password = eval(user_data)
-            account = account_password[0]
-            password = account_password[1]
-            password = MySQLFun.hash256Encode(password)
-            password_dict = MySQLFun.get_account_password()
-            if account in password_dict:
-                if password_dict[account] == password:
-                    if account not in current_client_dict:
-                        connl.send("correct password".encode("utf-8"))
-                        print("{} welcome to login!" .format(account))
-                        current_client_dict[account] = connl
-                        tcs = threading.Thread(target=client_server, args=(account, connl), daemon=True)
-                        tcs.start()
-                        break
+            if len(account_password) == 2:
+                account = account_password[0]
+                password = account_password[1]
+                password = MySQLFun.hash256Encode(password)
+                password_dict = MySQLFun.get_account_password()
+                if account in password_dict:
+                    if password_dict[account] == password:
+                        if account not in current_client_dict:
+                            connl.send("correct password".encode("utf-8"))
+                            print("{} welcome to login!" .format(account))
+                            current_client_dict[account] = connl
+                            tcs = threading.Thread(target=client_server, args=(account, connl), daemon=True)
+                            tcs.start()
+                            break
+                        else:
+                            if error_count == 3:
+                                connl.send("881".encode("utf-8"))
+                                connl.close()
+                                print("{} is disconnect" .format(addr))
+                                break
+                            else:
+                                connl.send("alreadly connect".encode("utf-8"))
+                                print("{} alreadly connect: {}" .format(addr, error_count))
+                                error_count += 1
+                            
                     else:
                         if error_count == 3:
                             connl.send("881".encode("utf-8"))
@@ -59,10 +72,9 @@ def check_password(connl, addr):
                             print("{} is disconnect" .format(addr))
                             break
                         else:
-                            connl.send("alreadly connect".encode("utf-8"))
-                            print("{} alreadly connect: {}" .format(addr, error_count))
+                            connl.send("error password".encode("utf-8"))
+                            print("{} input an error password: {}" .format(addr, error_count))
                             error_count += 1
-                        
                 else:
                     if error_count == 3:
                         connl.send("881".encode("utf-8"))
@@ -70,19 +82,19 @@ def check_password(connl, addr):
                         print("{} is disconnect" .format(addr))
                         break
                     else:
-                        connl.send("error password".encode("utf-8"))
-                        print("{} input an error password: {}" .format(addr, error_count))
+                        connl.send("no account".encode("utf-8"))
+                        print("{} input an error account: {}" .format(addr, error_count))
                         error_count += 1
             else:
-                if error_count == 3:
-                    connl.send("881".encode("utf-8"))
-                    connl.close()
-                    print("{} is disconnect" .format(addr))
-                    break
+                newaccount = account_password[1]
+                newpassword = account_password[2]
+                password_dict = MySQLFun.get_account_password()
+                if newaccount not in password_dict:
+                    MySQLFun.insert_to_account_password(newaccount, newpassword)
+                    connl.send("alreadly create new account".encode("utf-8"))
                 else:
-                    connl.send("no account".encode("utf-8"))
-                    print("{} input an error account: {}" .format(addr, error_count))
-                    error_count += 1
+                    connl.send("same account in db".encode("utf-8"))
+                
 
 
 
