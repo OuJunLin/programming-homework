@@ -3,6 +3,7 @@ import threading
 import mysql.connector as myconn
 import datetime
 import MySQLFun
+import time
 
 current_client_dict = {}
 
@@ -13,8 +14,27 @@ def get_current_clients():
 
 
 
+def send_img(connl, img_path):
+    imgFile = open(img_path, "rb")
+    while True:
+        imgData = imgFile.readline(1024)
+        connl.send(imgData)
+        if not imgData:
+            break  
+    imgFile.close()
+    time.sleep(0.1)
+    connl.send("transmit end".encode())
+
+
+
 def client_server(account, connl):
     global current_client_dict
+    data = (MySQLFun.get_user_data()[account], account)
+    connl.send(str(data).encode("utf-8"))
+    grade = MySQLFun.get_user_data()[account][1]
+    path = "img_store\\grade{}.jpg" .format(grade)
+    send_img(connl, path)
+    
     while True:
         command = connl.recv(1024).decode("utf-8")
         if command == "00000":
@@ -92,6 +112,7 @@ def check_password(connl, addr):
                 if newaccount not in password_dict:
                     MySQLFun.insert_to_account_password(newaccount, newpassword)
                     connl.send("alreadly create new account".encode("utf-8"))
+                    MySQLFun.insert_to_user_data(newaccount, 0, 1)
                 else:
                     connl.send("same account in db".encode("utf-8"))
                 

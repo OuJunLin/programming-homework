@@ -41,6 +41,24 @@ def get_account_password():
 
 
 
+def insert_to_user_data(account:str, sorce:int, grade:int):
+    cursor.execute('INSERT INTO `user_data`(account, sorce, grade) VALUES ("{}", {}, {})' .format(account, sorce, grade))
+    dbConn.commit()
+
+
+
+def get_user_data():
+    user_data_list = {}
+    cursor.execute("SELECT * FROM `user_data`;")
+    for row in cursor.fetchall():
+        user_data_list[row[1]] = [row[2], row[3]]
+
+    return user_data_list
+
+
+
+
+
 
 
 
